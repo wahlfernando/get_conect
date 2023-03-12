@@ -3,6 +3,9 @@ import 'dart:developer';
 import 'package:get/get.dart';
 import 'package:get_conect_exemple/models/user_model.dart';
 
+// Usado como base o json_rest_server para testes de conexão e autenticação
+// ==>  https://pub.dev/packages/json_rest_server   <==
+
 class UserRepository {
   final restClient = GetConnect(timeout: const Duration(milliseconds: 600));
 
@@ -20,7 +23,33 @@ class UserRepository {
       },
     );
 
-    restClient.httpClient.addResponseModifier((request, response){
+    var total = 0;
+    // autenticador: vai tentar 3 vezes para a conexão com o backend
+    // ==> apenas usando como exemplo fixos para demostração do GetConnect()
+    restClient.httpClient.addAuthenticator<Object?>((request) async {
+      log('Sendo chamaod o addAuthenticator!!');
+      total++;
+      const email = 'wahlfernando@yahoo.com.br';
+      final password = (total == 3 ? '132' : 'hdhdhdhdhdhdhdhd');
+
+      final result = await restClient
+          .post('/auth', {"email": email, "password": password});
+
+      if (!result.hasError) {
+        final accessToken = result.body['access_token'];
+        final type = result.body['type'];
+
+        if (accessToken != null) {
+          request.headers['authorization'] = '$type $accessToken';
+        } else {
+          log('');
+        }
+      }
+
+      return request;
+    });
+
+    restClient.httpClient.addResponseModifier((request, response) {
       response.headers?['end-time'] = DateTime.now().toIso8601String();
       return response;
     });
