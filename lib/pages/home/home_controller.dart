@@ -51,7 +51,7 @@ class HomeController extends GetxController with StateMixin<List<UserModel>> {
     }
   }
 
-  Future<void> UpdateUser(UserModel user) async {
+  Future<void> updateUser(UserModel user) async {
     try {
       user.name = 'Fulano modificado';
       user.email = 'teste@modificado.com';
@@ -66,8 +66,12 @@ class HomeController extends GetxController with StateMixin<List<UserModel>> {
   }
 
   Future<void> delete(UserModel user) async {
-    await _repository.deleteUser(user);
-    Get.snackbar('Sicesso', 'Usuário deletado com sucesso!!');
-
+    try {
+      await _repository.deleteUser(user);
+      _findAll();
+      Get.snackbar('Sicesso', 'Usuário deletado com sucesso!!');
+    } on Exception catch (e, s) {
+      log('Erro ao excluir usuário', error: e, stackTrace: s);
+    }
   }
 }

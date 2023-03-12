@@ -31,7 +31,8 @@ class HomePage extends GetView<HomeController> {
               final user = state[index];
 
               return ListTile(
-                onTap: () => controller.UpdateUser(user),
+                onTap: () => controller.updateUser(user),
+                onLongPress: () => controller.delete(user),
                 title: Text(user.name),
                 subtitle: Text(user.email),
               );

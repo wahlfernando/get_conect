@@ -1,23 +1,50 @@
-// user_repository
+import 'dart:developer';
+
 import 'package:get/get.dart';
 import 'package:get_conect_exemple/models/user_model.dart';
 
 class UserRepository {
-  final restClient = GetConnect();
+  final restClient = GetConnect(timeout: const Duration(milliseconds: 600));
+
+  UserRepository() {
+    restClient.httpClient.baseUrl = 'http://192.168.1.11:8080';
+    restClient.httpClient.errorSafety = false;
+
+    restClient.httpClient.addRequestModifier<Object?>(
+      (request) {
+        // addRequestModifier metodo que faz com ue seja chamado toda vez que um request esta sendo chamado
+        // pod ser feito alguma lógica de operação.
+        log('Url que está sendo chamado ${request.url.toString()}');
+        request.headers['start-time'] = DateTime.now().toIso8601String();
+        return request;
+      },
+    );
+
+    restClient.httpClient.addResponseModifier((request, response){
+      response.headers?['end-time'] = DateTime.now().toIso8601String();
+      return response;
+    });
+  }
 
   Future<List<UserModel>> findAll() async {
-    final result = await restClient.get('http://192.168.1.11:8080//users');
+    final result = await restClient.get('/users');
 
     if (result.hasError) {
       throw Exception('erro ao buscar usuário: ${result.statusText}');
     }
 
-    return result.body.map<UserModel>((user) => UserModel.fromMap(user)).toList();
+    // logs de acompanhamento de empo de tratativa do evendo de _findAll(),
+    // server para que possamos acompanhar ou até mndar essas informações para o back e poder melhorar o retorno.
+    log(result.request?.headers['start-time'] ?? '');
+    log(result.headers?['end-time'] ?? '');
+
+    return result.body
+        .map<UserModel>((user) => UserModel.fromMap(user))
+        .toList();
   }
 
   Future<void> save(UserModel user) async {
-    final result =
-        await restClient.post('http://192.168.1.11:8080/users', user.toMap());
+    final result = await restClient.post('/users', user.toMap());
 
     if (result.hasError) {
       throw Exception('erro ao salvar usuário: ${result.statusText}');
@@ -25,8 +52,7 @@ class UserRepository {
   }
 
   Future<void> deleteUser(UserModel user) async {
-    final result =
-        await restClient.delete('http://192.168.1.11:8080/users/${user.id}');
+    final result = await restClient.delete('/users/${user.id}');
 
     if (result.hasError) {
       throw Exception('erro ao deletar usuário: ${result.statusText}');
@@ -34,8 +60,7 @@ class UserRepository {
   }
 
   Future<void> updateUser(UserModel user) async {
-    final result =
-        await restClient.put('http://192.168.1.11:8080/users/${user.id}', user.toMap());
+    final result = await restClient.put('/users/${user.id}', user.toMap());
 
     if (result.hasError) {
       throw Exception('erro ao atualizar usuário: ${result.statusText}');
